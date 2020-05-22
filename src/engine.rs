@@ -312,7 +312,7 @@ mod tests {
             _ => panic!("should have matched as a virus"),
         }
     }
-
+/*
     #[test]
     fn scan_naughty_fd_matches() {
         ::initialize().expect("initialize should succeed");
@@ -352,4 +352,6 @@ mod tests {
             _ => panic!("should have matched as a virus"),
         }
     }
+
+ */
 }

@@ -5,12 +5,12 @@ use std::fmt;
 use ffi;
 
 pub struct ScanSettings {
-    settings: u32,
+    settings: ffi::cl_scan_options,
 }
 
 impl ScanSettings {
-    pub fn flags(&self) -> u32 {
-        self.settings
+    pub fn flags(&self) -> &ffi::cl_scan_options {
+        &self.settings
     }
 }
 
@@ -18,7 +18,7 @@ impl Default for ScanSettings {
     /// Returns the defualt scan settings per libclamav recommendations
     fn default() -> ScanSettings {
         ScanSettings {
-            settings: ffi::CL_SCAN_STDOPT,
+            settings: ffi::CL_SCAN_DEFAULT_OPT.clone(),
         }
     }
 }
@@ -28,228 +28,219 @@ impl fmt::Display for ScanSettings {
         let mut flags = String::new();
 
         // raw isn't a bitflag, it means "no special handling"
-        if self.settings == ffi::CL_SCAN_RAW {
+        if self.settings.general | self.settings.heuristic | self.settings.dev | self.settings.mail
+            | self.settings.parse == 0 {
             flags.push_str("CL_SCAN_RAW ");
         }
-        if self.settings & ffi::CL_SCAN_ARCHIVE == ffi::CL_SCAN_ARCHIVE {
-            flags.push_str("CL_SCAN_ARCHIVE ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_ARCHIVE == ffi::CL_SCAN_ARCHIVE {
+            flags.push_str("CL_SCAN_PARSE_ARCHIVE ");
         }
-        if self.settings & ffi::CL_SCAN_MAIL == ffi::CL_SCAN_MAIL {
-            flags.push_str("CL_SCAN_MAIL ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_MAIL == ffi::CL_SCAN_MAIL {
+            flags.push_str("CL_SCAN_PARSE_MAIL ");
         }
-        if self.settings & ffi::CL_SCAN_OLE2 == ffi::CL_SCAN_OLE2 {
-            flags.push_str("CL_SCAN_OLE2 ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_OLE2 == ffi::CL_SCAN_PARSE_OLE2 {
+            flags.push_str("CL_SCAN_PARSE_OLE2 ");
         }
-        if self.settings & ffi::CL_SCAN_BLOCKENCRYPTED == ffi::CL_SCAN_BLOCKENCRYPTED {
-            flags.push_str("CL_SCAN_BLOCKENCRYPTED ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE == ffi::CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE {
+            flags.push_str("CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE ");
         }
-        if self.settings & ffi::CL_SCAN_HTML == ffi::CL_SCAN_HTML {
-            flags.push_str("CL_SCAN_HTML ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_ENCRYPTED_DOC == ffi::CL_SCAN_HEURISTIC_ENCRYPTED_DOC {
+            flags.push_str("CL_SCAN_HEURISTIC_ENCRYPTED_DOC ");
         }
-        if self.settings & ffi::CL_SCAN_PE == ffi::CL_SCAN_PE {
-            flags.push_str("CL_SCAN_PE ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_HTML == ffi::CL_SCAN_PARSE_HTML {
+            flags.push_str("CL_SCAN_PARSE_HTML ");
         }
-        if self.settings & ffi::CL_SCAN_BLOCKBROKEN == ffi::CL_SCAN_BLOCKBROKEN {
-            flags.push_str("CL_SCAN_BLOCKBROKEN ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_PE == ffi::CL_SCAN_PARSE_PE {
+            flags.push_str("CL_SCAN_PARSE_PE ");
         }
-        if self.settings & ffi::CL_SCAN_MAILURL == ffi::CL_SCAN_MAILURL {
-            flags.push_str("CL_SCAN_MAILURL ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_BROKEN == ffi::CL_SCAN_HEURISTIC_BROKEN {
+            flags.push_str("CL_SCAN_HEURISTIC_BROKEN ");
         }
-        if self.settings & ffi::CL_SCAN_BLOCKMAX == ffi::CL_SCAN_BLOCKMAX {
-            flags.push_str("CL_SCAN_BLOCKMAX ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_EXCEEDS_MAX == ffi::CL_SCAN_HEURISTIC_EXCEEDS_MAX {
+            flags.push_str("CL_SCAN_HEURISTIC_EXCEEDS_MAX ");
         }
-        if self.settings & ffi::CL_SCAN_ALGORITHMIC == ffi::CL_SCAN_ALGORITHMIC {
-            flags.push_str("CL_SCAN_ALGORITHMIC ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH == ffi::CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH {
+            flags.push_str("CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH ");
         }
-        if self.settings & ffi::CL_SCAN_PHISHING_BLOCKSSL == ffi::CL_SCAN_PHISHING_BLOCKSSL {
-            flags.push_str("CL_SCAN_PHISHING_BLOCKSSL ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_PHISHING_CLOAK == ffi::CL_SCAN_HEURISTIC_PHISHING_CLOAK {
+            flags.push_str("CL_SCAN_HEURISTIC_PHISHING_CLOAK ");
         }
-        if self.settings & ffi::CL_SCAN_PHISHING_BLOCKCLOAK == ffi::CL_SCAN_PHISHING_BLOCKCLOAK {
-            flags.push_str("CL_SCAN_PHISHING_BLOCKCLOAK ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_ELF == ffi::CL_SCAN_PARSE_ELF {
+            flags.push_str("CL_SCAN_PARSE_ELF ");
         }
-        if self.settings & ffi::CL_SCAN_ELF == ffi::CL_SCAN_ELF {
-            flags.push_str("CL_SCAN_ELF ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_PDF == ffi::CL_SCAN_PARSE_PDF {
+            flags.push_str("CL_SCAN_PARSE_PDF ");
         }
-        if self.settings & ffi::CL_SCAN_PDF == ffi::CL_SCAN_PDF {
-            flags.push_str("CL_SCAN_PDF ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_STRUCTURED == ffi::CL_SCAN_HEURISTIC_STRUCTURED {
+            flags.push_str("CL_SCAN_HEURISTIC_STRUCTURED ");
         }
-        if self.settings & ffi::CL_SCAN_STRUCTURED == ffi::CL_SCAN_STRUCTURED {
-            flags.push_str("CL_SCAN_STRUCTURED ");
-        }
-        if self.settings & ffi::CL_SCAN_STRUCTURED_SSN_NORMAL == ffi::CL_SCAN_STRUCTURED_SSN_NORMAL
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL == ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL
         {
-            flags.push_str("CL_SCAN_STRUCTURED_SSN_NORMAL ");
+            flags.push_str("CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL ");
         }
-        if self.settings & ffi::CL_SCAN_STRUCTURED_SSN_STRIPPED
-            == ffi::CL_SCAN_STRUCTURED_SSN_STRIPPED
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED
+            == ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED
         {
-            flags.push_str("CL_SCAN_STRUCTURED_SSN_STRIPPED ");
+            flags.push_str("CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED ");
         }
-        if self.settings & ffi::CL_SCAN_PARTIAL_MESSAGE == ffi::CL_SCAN_PARTIAL_MESSAGE {
-            flags.push_str("CL_SCAN_PARTIAL_MESSAGE ");
+        if self.settings.mail & ffi::CL_SCAN_MAIL_PARTIAL_MESSAGE == ffi::CL_SCAN_MAIL_PARTIAL_MESSAGE {
+            flags.push_str("CL_SCAN_MAIL_PARTIAL_MESSAGE ");
         }
-        if self.settings & ffi::CL_SCAN_HEURISTIC_PRECEDENCE == ffi::CL_SCAN_HEURISTIC_PRECEDENCE {
-            flags.push_str("CL_SCAN_HEURISTIC_PRECEDENCE ");
+        if self.settings.general & ffi::CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE == ffi::CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE {
+            flags.push_str("CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE ");
         }
-        if self.settings & ffi::CL_SCAN_BLOCKMACROS == ffi::CL_SCAN_BLOCKMACROS {
-            flags.push_str("CL_SCAN_BLOCKMACROS ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_MACROS == ffi::CL_SCAN_HEURISTIC_MACROS {
+            flags.push_str("CL_SCAN_HEURISTIC_MACROS ");
         }
-        if self.settings & ffi::CL_SCAN_ALLMATCHES == ffi::CL_SCAN_ALLMATCHES {
-            flags.push_str("CL_SCAN_ALLMATCHES ");
+        if self.settings.general & ffi::CL_SCAN_GENERAL_ALLMATCHES == ffi::CL_SCAN_GENERAL_ALLMATCHES {
+            flags.push_str("CL_SCAN_GENERAL_ALLMATCHES ");
         }
-        if self.settings & ffi::CL_SCAN_SWF == ffi::CL_SCAN_SWF {
-            flags.push_str("CL_SCAN_SWF ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_SWF == ffi::CL_SCAN_PARSE_SWF {
+            flags.push_str("CL_SCAN_PARSE_SWF ");
         }
-        if self.settings & ffi::CL_SCAN_PARTITION_INTXN == ffi::CL_SCAN_PARTITION_INTXN {
-            flags.push_str("CL_SCAN_PARTITION_INTXN ");
+        if self.settings.heuristic & ffi::CL_SCAN_HEURISTIC_PARTITION_INTXN == ffi::CL_SCAN_HEURISTIC_PARTITION_INTXN {
+            flags.push_str("CL_SCAN_HEURISTIC_PARTITION_INTXN ");
         }
-        if self.settings & ffi::CL_SCAN_XMLDOCS == ffi::CL_SCAN_XMLDOCS {
-            flags.push_str("CL_SCAN_XMLDOCS ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_XMLDOCS == ffi::CL_SCAN_PARSE_XMLDOCS {
+            flags.push_str("CL_SCAN_PARSE_XMLDOCS ");
         }
-        if self.settings & ffi::CL_SCAN_HWP3 == ffi::CL_SCAN_HWP3 {
-            flags.push_str("CL_SCAN_HWP3 ");
+        if self.settings.parse & ffi::CL_SCAN_PARSE_HWP3 == ffi::CL_SCAN_PARSE_HWP3 {
+            flags.push_str("CL_SCAN_PARSE_HWP3 ");
         }
-        if self.settings & ffi::CL_SCAN_FILE_PROPERTIES == ffi::CL_SCAN_FILE_PROPERTIES {
-            flags.push_str("CL_SCAN_FILE_PROPERTIES ");
+        if self.settings.dev & ffi::CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO == ffi::CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO {
+            flags.push_str("CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO ");
         }
-        if self.settings & ffi::CL_SCAN_PERFORMANCE_INFO == ffi::CL_SCAN_PERFORMANCE_INFO {
-            flags.push_str("CL_SCAN_PERFORMANCE_INFO ");
+        if self.settings.dev & ffi::CL_SCAN_DEV_COLLECT_SHA == ffi::CL_SCAN_DEV_COLLECT_SHA {
+            flags.push_str("CL_SCAN_DEV_COLLECT_SHA ");
         }
-        if self.settings & ffi::CL_SCAN_INTERNAL_COLLECT_SHA == ffi::CL_SCAN_INTERNAL_COLLECT_SHA {
-            flags.push_str("CL_SCAN_INTERNAL_COLLECT_SHA ");
-        }
-        write!(f, "{:#X}: {}", self.settings, flags.trim_right())
+        write!(f, "{:#X} {:#X} {:#X} {:#X} {:#X}: {}", self.settings.general, self.settings.parse,
+               self.settings.heuristic, self.settings.mail, self.settings.dev, flags.trim_end())
     }
 }
 
 pub struct ScanSettingsBuilder {
-    current: u32,
+    current: ffi::cl_scan_options,
 }
 
 impl ScanSettingsBuilder {
     pub fn new() -> Self {
         ScanSettingsBuilder {
-            current: ffi::CL_SCAN_STDOPT,
+            current: ffi::CL_SCAN_DEFAULT_OPT.clone(),
         }
     }
 
     pub fn build(&self) -> ScanSettings {
         ScanSettings {
-            settings: self.current,
+            settings: self.current.clone(),
         }
     }
 
     /// Disable support for special files.
     pub fn clear(&mut self) -> &mut Self {
-        self.current = ffi::CL_SCAN_RAW;
+        self.current = ffi::CL_SCAN_RAW_OPT;
         self
     }
 
     /// Set a flag explicitly
-    pub fn with_flag(&mut self, flag: u32) -> &mut Self {
+    /// TODO make individual with_flag for each field
+    /*pub fn with_flag(&mut self, flag: u32) -> &mut Self {
         self.current |= flag;
         self
-    }
+    }*/
 
     /// Enable transparent scanning of various archive formats.
     pub fn enable_archive(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_ARCHIVE;
+        self.current.parse |= ffi::CL_SCAN_PARSE_ARCHIVE;
         self
     }
 
     /// Enable support for mail files.
     pub fn enable_mail(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_MAIL;
-        self
-    }
-
-    /// Enable support for mail URL scanning.
-    pub fn enable_mail_url(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_MAILURL;
+        self.current.parse |= ffi::CL_SCAN_PARSE_MAIL;
         self
     }
 
     /// Enable support for OLE2 containers (used by MS Office and .msi files).
     pub fn enable_ole2(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_OLE2;
+        self.current.parse |= ffi::CL_SCAN_PARSE_OLE2;
         self
     }
 
     /// With this flag the library will mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
     pub fn block_encrypted(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_BLOCKENCRYPTED;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
         self
     }
 
     /// Enable HTML normalisation (including ScrEnc decryption).
     pub fn enable_html(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_HTML;
+        self.current.parse |= ffi::CL_SCAN_PARSE_HTML;
         self
     }
 
     /// Enable deep scanning of Portable Executable files and allows libclamav to unpack executables compressed with run-time unpackers.
     pub fn enable_pe(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_PE;
+        self.current.parse |= ffi::CL_SCAN_PARSE_PE;
         self
     }
 
     /// Try to detect broken executables and mark them as Broken.Executable.
     pub fn block_broken_executables(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_BLOCKBROKEN;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_BROKEN;
         self
     }
 
     ///  Mark archives as viruses if maxfiles, maxfilesize, or maxreclevel limit is reached.
     pub fn block_max_limit(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_BLOCKMAX;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_EXCEEDS_MAX;
         self
     }
 
     /// Enable algorithmic detection of viruses.
     pub fn enable_algorithmic(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_ALGORITHMIC;
+        self.current.general |= ffi::CL_SCAN_GENERAL_HEURISTICS;
         self
     }
 
     /// Enable phishing module: always block SSL mismatches in URLs.
     pub fn enable_phishing_blockssl(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_PHISHING_BLOCKSSL;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
         self
     }
 
     /// Enable phishing module: always block cloaked URLs.
     pub fn enable_phishing_blockcloak(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_PHISHING_BLOCKCLOAK;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_PHISHING_CLOAK;
         self
     }
 
     /// Enable support for ELF files.
     pub fn enable_elf(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_ELF;
+        self.current.parse |= ffi::CL_SCAN_PARSE_ELF;
         self
     }
 
     /// Enable scanning within PDF files.
     pub fn enable_pdf(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_PDF;
+        self.current.parse |= ffi::CL_SCAN_PARSE_PDF;
         self
     }
 
     /// Enable the DLP module which scans for credit card and SSN numbers.
     pub fn enable_structured(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_STRUCTURED;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_STRUCTURED;
         self
     }
 
     /// Enable search for SSNs formatted as xx-yy-zzzz.
     pub fn enable_structured_ssn_normal(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_STRUCTURED_SSN_NORMAL;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
         self
     }
 
     /// Enable search for SSNs formatted as xxyyzzzz.
     pub fn enable_structured_ssn_stripped(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_STRUCTURED_SSN_STRIPPED;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED;
         self
     }
 
@@ -257,7 +248,7 @@ impl ScanSettingsBuilder {
     ///
     /// You will need to periodically clean up $TemporaryDirectory/clamav-partial directory.
     pub fn enable_partial_message(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_PARTIAL_MESSAGE;
+        self.current.mail |= ffi::CL_SCAN_MAIL_PARTIAL_MESSAGE;
         self
     }
 
@@ -269,37 +260,31 @@ impl ScanSettingsBuilder {
     /// heuristically detected virus/phishing, and a real malware, the real malware will be
     /// reported.
     pub fn enable_heuristic_precedence(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_HEURISTIC_PRECEDENCE;
+        self.current.general |= ffi::CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
         self
     }
 
     /// OLE2 containers, which contain VBA macros will be marked infected (Heuris-tics.OLE2.ContainsMacros).
     pub fn block_macros(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_BLOCKMACROS;
+        self.current.heuristic |= ffi::CL_SCAN_HEURISTIC_MACROS;
         self
     }
 
     /// Enable scanning within SWF files, notably compressed SWF.
     pub fn enable_swf(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_SWF;
+        self.current.parse |= ffi::CL_SCAN_PARSE_SWF;
         self
     }
 
     /// Enable scanning of XML docs.
     pub fn enable_xmldocs(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_XMLDOCS;
+        self.current.parse |= ffi::CL_SCAN_PARSE_XMLDOCS;
         self
     }
 
     /// Enable scanning of HWP3 files.
     pub fn enable_hwp3(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_HWP3;
-        self
-    }
-
-    /// Enable scanning of file properties.
-    pub fn enable_file_properties(&mut self) -> &mut Self {
-        self.current |= ffi::CL_SCAN_FILE_PROPERTIES;
+        self.current.parse |= ffi::CL_SCAN_PARSE_HWP3;
         self
     }
 }
@@ -311,19 +296,23 @@ mod tests {
     #[test]
     fn builder_defaults_to_standard_opts() {
         let settings = ScanSettingsBuilder::new().build();
-        assert_eq!(settings.settings, ffi::CL_SCAN_STDOPT);
+        let default = ffi::CL_SCAN_DEFAULT_OPT.clone();
+        assert_eq!(settings.settings.general | settings.settings.dev |
+                   settings.settings.mail | settings.settings.heuristic | settings.settings.parse,
+                   default.general|default.dev|default.mail|default.heuristic|default.parse);
     }
 
     #[test]
     fn builder_clear_success() {
         let settings = ScanSettingsBuilder::new().clear().build();
-        assert_eq!(settings.settings, 0);
+        assert_eq!(settings.settings.general | settings.settings.dev |
+                       settings.settings.mail | settings.settings.heuristic | settings.settings.parse, 0);
     }
 
     #[test]
     fn builder_just_pdf_success() {
         let settings = ScanSettingsBuilder::new().clear().enable_pdf().build();
-        assert_eq!(settings.settings, ffi::CL_SCAN_PDF);
+        assert_eq!(settings.settings.parse, ffi::CL_SCAN_PARSE_PDF);
     }
 
     #[test]
@@ -335,8 +324,8 @@ mod tests {
             .enable_pe()
             .build();
         assert_eq!(
-            settings.settings,
-            ffi::CL_SCAN_PDF | ffi::CL_SCAN_HTML | ffi::CL_SCAN_PE
+            settings.settings.parse,
+            ffi::CL_SCAN_PARSE_PDF | ffi::CL_SCAN_PARSE_HTML | ffi::CL_SCAN_PARSE_PE
         );
     }
 
@@ -347,12 +336,10 @@ mod tests {
             .enable_algorithmic()
             .enable_archive()
             .enable_elf()
-            .enable_file_properties()
             .enable_heuristic_precedence()
             .enable_html()
             .enable_hwp3()
             .enable_mail()
-            .enable_mail_url()
             .enable_ole2()
             .enable_partial_message()
             .enable_pdf()
@@ -369,51 +356,40 @@ mod tests {
             .block_macros()
             .block_max_limit()
             .build();
-        assert_eq!(
-            settings.settings,
-            ffi::CL_SCAN_ARCHIVE | ffi::CL_SCAN_MAIL | ffi::CL_SCAN_OLE2
-                | ffi::CL_SCAN_BLOCKENCRYPTED | ffi::CL_SCAN_HTML | ffi::CL_SCAN_PE
-                | ffi::CL_SCAN_BLOCKBROKEN | ffi::CL_SCAN_MAILURL
-                | ffi::CL_SCAN_BLOCKMAX | ffi::CL_SCAN_ALGORITHMIC
-                | ffi::CL_SCAN_PHISHING_BLOCKSSL | ffi::CL_SCAN_PHISHING_BLOCKCLOAK
-                | ffi::CL_SCAN_ELF | ffi::CL_SCAN_PDF | ffi::CL_SCAN_STRUCTURED
-                | ffi::CL_SCAN_STRUCTURED_SSN_NORMAL
-                | ffi::CL_SCAN_STRUCTURED_SSN_STRIPPED | ffi::CL_SCAN_PARTIAL_MESSAGE
-                | ffi::CL_SCAN_HEURISTIC_PRECEDENCE | ffi::CL_SCAN_BLOCKMACROS
-                | ffi::CL_SCAN_SWF | ffi::CL_SCAN_XMLDOCS | ffi::CL_SCAN_HWP3
-                | ffi::CL_SCAN_FILE_PROPERTIES
-        );
-    }
-
-    #[test]
-    fn display_settings_raw_success() {
-        let string_settings = ScanSettings {
-            settings: ffi::CL_SCAN_RAW,
-        }.to_string();
-        assert_eq!(string_settings, "0x0: CL_SCAN_RAW");
+        assert_eq!(settings.settings.parse, ffi::CL_SCAN_PARSE_ELF| ffi::CL_SCAN_PARSE_PDF |
+            ffi::CL_SCAN_PARSE_ARCHIVE | ffi::CL_SCAN_PARSE_MAIL | ffi::CL_SCAN_PARSE_OLE2 |
+            ffi::CL_SCAN_PARSE_HTML | ffi::CL_SCAN_PARSE_PE | ffi::CL_SCAN_PARSE_SWF |
+            ffi::CL_SCAN_PARSE_XMLDOCS | ffi::CL_SCAN_PARSE_HWP3);
+        assert_eq!(settings.settings.general, ffi::CL_SCAN_GENERAL_HEURISTICS |
+            ffi::CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE);
+        assert_eq!(settings.settings.heuristic, ffi::CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE |
+            ffi::CL_SCAN_HEURISTIC_BROKEN | ffi::CL_SCAN_HEURISTIC_EXCEEDS_MAX |
+            ffi::CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH | ffi::CL_SCAN_HEURISTIC_PHISHING_CLOAK |
+            ffi::CL_SCAN_HEURISTIC_STRUCTURED | ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL |
+            ffi::CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED | ffi::CL_SCAN_HEURISTIC_MACROS);
+        assert_eq!(settings.settings.mail, ffi::CL_SCAN_MAIL_PARTIAL_MESSAGE);
     }
 
     #[test]
     fn display_settings_standard_options_success() {
         let string_settings = ScanSettings {
-            settings: ffi::CL_SCAN_STDOPT,
+            settings: ffi::CL_SCAN_DEFAULT_OPT,
         }.to_string();
-        assert!(string_settings.contains("CL_SCAN_ARCHIVE"));
-        assert!(string_settings.contains("CL_SCAN_MAIL"));
-        assert!(string_settings.contains("CL_SCAN_OLE2"));
-        assert!(string_settings.contains("CL_SCAN_PDF"));
-        assert!(string_settings.contains("CL_SCAN_HTML"));
-        assert!(string_settings.contains("CL_SCAN_PE"));
-        assert!(string_settings.contains("CL_SCAN_ALGORITHMIC"));
-        assert!(string_settings.contains("CL_SCAN_ELF"));
-        assert!(string_settings.contains("CL_SCAN_SWF"));
-        assert!(string_settings.contains("CL_SCAN_XMLDOCS"));
-        assert!(string_settings.contains("CL_SCAN_HWP3"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_ARCHIVE"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_OLE2"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_PDF"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_HTML"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_PE"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_ELF"));
+        assert!(string_settings.contains("CL_SCAN_PARSE_SWF"));
     }
 
     #[test]
     fn settings_default_to_standard() {
         let settings: ScanSettings = Default::default();
-        assert_eq!(settings.settings, ffi::CL_SCAN_STDOPT);
+        let default = ffi::CL_SCAN_DEFAULT_OPT.clone();
+        assert_eq!(settings.settings.general | settings.settings.dev |
+                       settings.settings.mail | settings.settings.heuristic | settings.settings.parse,
+                   default.general|default.dev|default.mail|default.heuristic|default.parse);
     }
 }

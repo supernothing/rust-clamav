@@ -6,8 +6,18 @@ pub const CL_INIT_DEFAULT: u32 = 0x0;
 
 pub type cl_engine = c_void;
 
+#[derive(Clone)]
+#[repr(C)]
+pub struct cl_scan_options {
+    pub general: c_uint,
+    pub parse: c_uint,
+    pub heuristic: c_uint,
+    pub mail: c_uint,
+    pub dev: c_uint,
+}
+
 // :libclamav.so.7 as opposed to clamav as libclamav.so may not exist
-#[link(name = ":libclamav.so.7")]
+#[link(name = ":libclamav.so.9")]
 extern "C" {
     pub fn cl_init(initOptions: c_uint) -> cl_error;
     pub fn cl_initialize_crypto() -> c_int;
@@ -34,7 +44,7 @@ extern "C" {
         virname: *mut *const c_char,
         scanned: *mut c_ulong,
         engine: *const cl_engine,
-        scanoptions: c_uint,
+        scanoptions: *const cl_scan_options,
     ) -> cl_error;
 
     pub fn cl_scandesc(
@@ -42,7 +52,7 @@ extern "C" {
         virname: *mut *const c_char,
         scanned: *mut c_ulong,
         engine: *const cl_engine,
-        scanoptions: c_uint,
+        scanoptions: *const cl_scan_options,
     ) -> cl_error;
 
     // version
@@ -164,3 +174,59 @@ pub const CL_SCAN_INTERNAL_COLLECT_SHA: c_uint = 0x80000000;
 pub const CL_SCAN_STDOPT: c_uint = CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF
     | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC
     | CL_SCAN_ELF | CL_SCAN_SWF | CL_SCAN_XMLDOCS | CL_SCAN_HWP3;
+
+/* general */
+pub const CL_SCAN_GENERAL_ALLMATCHES: c_uint = 0x1;  /* scan in all-match mode */
+pub const CL_SCAN_GENERAL_COLLECT_METADATA: c_uint = 0x2;  /* collect metadata (--gen-json) */
+pub const CL_SCAN_GENERAL_HEURISTICS: c_uint = 0x4;  /* option to enable heuristic alerts */
+pub const CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE: c_uint = 0x8;  /* allow heuristic match to take precedence. */
+pub const CL_SCAN_GENERAL_UNPRIVILEGED: c_uint = 0x10; /* scanner will not have read access to files. */
+
+/* parsing capabilities options */
+pub const CL_SCAN_PARSE_ARCHIVE: c_uint = 0x1;
+pub const CL_SCAN_PARSE_ELF: c_uint = 0x2;
+pub const CL_SCAN_PARSE_PDF: c_uint = 0x4;
+pub const CL_SCAN_PARSE_SWF: c_uint = 0x8;
+pub const CL_SCAN_PARSE_HWP3: c_uint = 0x10;
+pub const CL_SCAN_PARSE_XMLDOCS: c_uint = 0x20;
+pub const CL_SCAN_PARSE_MAIL: c_uint = 0x40;
+pub const CL_SCAN_PARSE_OLE2: c_uint = 0x80;
+pub const CL_SCAN_PARSE_HTML: c_uint = 0x100;
+pub const CL_SCAN_PARSE_PE: c_uint = 0x200;
+
+/* heuristic alerting options */
+pub const CL_SCAN_HEURISTIC_BROKEN: c_uint = 0x2;   /* alert on broken PE and broken ELF files */
+pub const CL_SCAN_HEURISTIC_EXCEEDS_MAX: c_uint = 0x4;   /* alert when files exceed scan limits (filesize, max scansize, or max recursion depth) */
+pub const CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH: c_uint = 0x8;   /* alert on SSL mismatches */
+pub const CL_SCAN_HEURISTIC_PHISHING_CLOAK: c_uint = 0x10;  /* alert on cloaked URLs in emails */
+pub const CL_SCAN_HEURISTIC_MACROS: c_uint = 0x20;  /* alert on OLE2 files containing macros */
+pub const CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE: c_uint = 0x40;  /* alert if archive is encrypted (rar, zip, etc) */
+pub const CL_SCAN_HEURISTIC_ENCRYPTED_DOC: c_uint = 0x80;  /* alert if a document is encrypted (pdf, docx, etc) */
+pub const CL_SCAN_HEURISTIC_PARTITION_INTXN: c_uint = 0x100; /* alert if partition table size doesn't make sense */
+pub const CL_SCAN_HEURISTIC_STRUCTURED: c_uint = 0x200; /* data loss prevention options, i.e. alert when detecting personal information */
+pub const CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL: c_uint = 0x400; /* alert when detecting social security numbers */
+pub const CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED: c_uint = 0x800; /* alert when detecting stripped social security numbers */
+
+/* mail scanning options */
+pub const CL_SCAN_MAIL_PARTIAL_MESSAGE: c_uint = 0x1;
+
+/* dev options */
+pub const CL_SCAN_DEV_COLLECT_SHA: c_uint = 0x1; /* Enables hash output in sha-collect builds - for internal use only */
+pub const CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO: c_uint = 0x2; /* collect performance timings */
+
+
+pub const CL_SCAN_DEFAULT_OPT: cl_scan_options = cl_scan_options {
+    general: CL_SCAN_GENERAL_HEURISTICS,
+    parse: (CL_SCAN_PARSE_ARCHIVE|CL_SCAN_PARSE_ELF|CL_SCAN_PARSE_PDF|CL_SCAN_PARSE_SWF|CL_SCAN_PARSE_OLE2|CL_SCAN_PARSE_HTML|CL_SCAN_PARSE_PE),
+    heuristic: (CL_SCAN_HEURISTIC_BROKEN|CL_SCAN_HEURISTIC_MACROS|CL_SCAN_HEURISTIC_PARTITION_INTXN),
+    mail: 0,
+    dev: 0,
+};
+
+pub const CL_SCAN_RAW_OPT: cl_scan_options = cl_scan_options {
+    general: 0,
+    parse: 0,
+    heuristic: 0,
+    mail: 0,
+    dev: 0,
+};

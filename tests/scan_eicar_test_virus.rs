@@ -32,7 +32,7 @@ fn scan_using_system_databases() {
         .scan_file(test_file.path().to_str().unwrap(), &scan_settings)
         .unwrap();
     match result {
-        engine::ScanResult::Virus(name) => assert_eq!(name, "Eicar-Test-Signature"),
+        engine::ScanResult::Virus(name) => assert_eq!(name, "Win.Test.EICAR_HDB-1"),
         _ => panic!("Expected test virust to be picked up as a virus"),
     }
 }
